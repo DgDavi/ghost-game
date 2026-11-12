@@ -45,12 +45,58 @@ class GhostGame {
 
    /** Moves the square in the current direction. */
    method void moveGhost() {
-      if (direction = 1) { do ghost.moveUp(); }
-      if (direction = 2) { do ghost.moveDown(); }
-      if (direction = 3) { do ghost.moveLeft(); }
-      if (direction = 4) { do ghost.moveRight(); }
-      do Sys.wait(5);  // delays the next movement
+      var int col, row;
+      var int nextCol, nextRow;
+
+      let col = ghost.getX() / 16;
+      let row = ghost.getY() / 16;
+
+      let nextCol = col;
+      let nextRow = row;
+
+      if (direction = 1) {
+         let nextRow = row - 1;
+      }
+
+      if (direction = 2) {
+         let nextRow = row + 1;
+      }
+
+      if (direction = 3) {
+         let nextCol = col - 1;
+      }
+
+      if (direction = 4) {
+         let nextCol = col + 1;
+      }
+
+      if (direction = 0) { // Nao ha movimento a executar
+         return;
+      }
+      if (map.isWall(nextCol, nextRow)) {
+         let direction = 0;
+         return;
+      }
+
+      if (direction = 1) {
+         do ghost.moveUp();
+      }
+
+      if (direction = 2) {
+         do ghost.moveDown();
+      }
+
+      if (direction = 3) {
+         do ghost.moveLeft();
+      }
+
+      if (direction = 4) {
+         do ghost.moveRight();
+      }
+
+      do Sys.wait(5);
       return;
+
    }
 
    /** Runs the game: handles the user's inputs and moves the square accordingly */
