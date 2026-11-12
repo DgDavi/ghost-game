@@ -35,9 +35,16 @@ class Ghost {
    /** Erases the square from the screen. */
    method void erase() {
       do Screen.setColor(false);
-      do Screen.drawRectangle(x, y, x + size, y + size);
+
+      do Screen.drawRectangle(
+         x,
+         y,
+         x + size - 1,
+         y + size - 1
+      );
+
       return;
-   }
+      }
 
    method void drawHappyGhost(int location) {
       let memAddress = 16384+location;
@@ -121,4 +128,15 @@ class Ghost {
       }
       return;
    }
+
+
+   method int getX() {
+      return x;
+   }
+
+
+   method int getY() {
+      return y;
+   }
+
 }

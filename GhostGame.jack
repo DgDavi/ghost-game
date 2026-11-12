@@ -19,12 +19,17 @@ class GhostGame {
                         // 0=none, 1=up, 2=down, 3=left, 4=right
    field Random random;
    field Ghost ghost;
+   field GameMap map;
 
    /** Constructs a new Square Game. */
    constructor GhostGame new() {
       // Creates a 30 by 30 pixels square and positions it at the top-left
       // of the screen.
-      let ghost = Ghost.new(0, 0);
+      let map = GameMap.new();
+      do Screen.clearScreen();
+      do map.draw();
+
+      let ghost = Ghost.new(32, 48);
       let random = Random.new(19);
       let direction = 0;  // initial state is no movement
       return this;
@@ -32,6 +37,7 @@ class GhostGame {
 
    /** Disposes this game. */
    method void dispose() {
+      do map.dispose();
       do ghost.dispose();
       do Memory.deAlloc(this);
       return;
@@ -39,12 +45,58 @@ class GhostGame {
 
    /** Moves the square in the current direction. */
    method void moveGhost() {
-      if (direction = 1) { do ghost.moveUp(); }
-      if (direction = 2) { do ghost.moveDown(); }
-      if (direction = 3) { do ghost.moveLeft(); }
-      if (direction = 4) { do ghost.moveRight(); }
-      do Sys.wait(5);  // delays the next movement
+      var int col, row;
+      var int nextCol, nextRow;
+
+      let col = ghost.getX() / 16;
+      let row = ghost.getY() / 16;
+
+      let nextCol = col;
+      let nextRow = row;
+
+      if (direction = 1) {
+         let nextRow = row - 1;
+      }
+
+      if (direction = 2) {
+         let nextRow = row + 1;
+      }
+
+      if (direction = 3) {
+         let nextCol = col - 1;
+      }
+
+      if (direction = 4) {
+         let nextCol = col + 1;
+      }
+
+      if (direction = 0) { // Nao ha movimento a executar
+         return;
+      }
+      if (map.isWall(nextCol, nextRow)) {
+         let direction = 0;
+         return;
+      }
+
+      if (direction = 1) {
+         do ghost.moveUp();
+      }
+
+      if (direction = 2) {
+         do ghost.moveDown();
+      }
+
+      if (direction = 3) {
+         do ghost.moveLeft();
+      }
+
+      if (direction = 4) {
+         do ghost.moveRight();
+      }
+
+      do Sys.wait(5);
       return;
+
    }
 
    /** Runs the game: handles the user's inputs and moves the square accordingly */

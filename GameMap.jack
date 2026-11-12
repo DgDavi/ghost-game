@@ -1,0 +1,126 @@
+class GameMap {
+    field Array cells;
+
+
+    constructor GameMap new() {
+        var int i;
+
+        let cells = Array.new(512);
+        let i =  0;
+
+        while (i < 512) {
+            let cells[i] = 0;
+            let i = i + 1;
+        }
+
+        do horizontalWall(0, 0, 31); // Deixa a linha superior vazia
+
+        do horizontalWall(1, 0, 31);
+        do horizontalWall(15, 0, 31);
+        do verticalWall(0, 1, 15);
+        do verticalWall(31, 1, 15);
+
+        do verticalWall(7, 3, 6);
+        do verticalWall(15, 2, 5);
+        do verticalWall(23, 3, 6);
+
+        do horizontalWall(9, 3, 9);
+        do horizontalWall(9, 13, 19);
+        do horizontalWall(9, 23, 28);
+
+        do verticalWall(11, 11, 13);
+        do verticalWall(20, 11, 13);
+
+        return this;
+    }
+
+
+    method void setWall(int col, int row) {
+        let cells[(row * 32) + col] = 1;
+        return;
+    }
+
+
+    method void horizontalWall(int row, int start, int end) {
+        var int col;
+
+        let col = start;
+
+        while (col < (end + 1)) {
+            do setWall(col, row);
+            let col = col + 1;
+        }
+
+        return;
+    }
+
+
+    method void verticalWall(int col, int start, int end) {
+        var int row;
+
+        let row = start;
+
+        while (row < (end + 1)) {
+            do setWall(col, row);
+            let row = row + 1;
+        }
+
+        return;
+    }
+
+
+    method boolean isWall(int col, int row) {
+        if ((col < 0) | (col > 31)) {
+            return true;
+        }
+
+        if ((row < 0) | (row > 15)) {
+            return true;
+        }
+
+        if (cells[(row * 32) + col] = 1) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    method void draw() {
+        var int row, col;
+
+        do Screen.setColor(true);
+
+        let row = 1;
+
+        while (row < 16) {
+            let col = 0;
+
+            while (col < 32) {
+                if (isWall(col, row)) {
+                    do Screen.drawRectangle(
+                        col * 16,
+                        row * 16,
+                        (col * 16) + 15,
+                        (row * 16) + 15
+                    );
+                }
+
+                let col = col + 1;
+            }
+
+            let row = row + 1;
+        }
+
+        return;
+    }
+
+
+    method void dispose() {
+        do cells.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+
+}
