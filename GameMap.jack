@@ -48,6 +48,7 @@ class GameMap {
 
         while (col < (end + 1)) {
             do setWall(col, row);
+            let col = col + 1;
         }
 
         return;
@@ -86,7 +87,7 @@ class GameMap {
 
 
     method void draw() {
-        var int row, col
+        var int row, col;
 
         do Screen.setColor(true);
 
@@ -117,7 +118,7 @@ class GameMap {
 
     method void dispose() {
         do cells.dispose();
-        de Memory.deAlloc(this);
+        do Memory.deAlloc(this);
         return;
     }
 
