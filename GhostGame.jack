@@ -2,41 +2,82 @@
 // Adaptado para o Projeto 6 - Ghost Multiplayer.
 
 /**
- * Jogo Ghost com dois jogadores.
+ * Jogo Ghost com dois jogadores, cronometro e fim de jogo.
  *
  * Jogador 1 (fantasma):  setas = direcao   |  '.' ou ';' = parar
  * Jogador 2 (pessoa):    w a s d = direcao |  'e' = parar
- * ESC (ou Q) encerra o jogo.
+ * ESC encerra o jogo (Q tambem).
  *
- * Os dois personagens andam sozinhos ate encontrar uma parede, entao
- * cada jogador so precisa "tocar" na tecla de direcao.
+ * Fluxo de uma rodada:
+ *   1) Relogio de preparacao: a pessoa se afasta e o fantasma fica parado.
+ *   2) Relogio principal: os dois se movem.
+ *      - Fantasma encosta na pessoa  -> Jogador 2 perde (fantasma vence)
+ *      - Relogio principal chega a 0 -> Jogador 1 perde (pessoa vence)
+ *   3) Mensagem de Game Over e reinicio automatico.
  */
 class GhostGame {
-   field int direction; // direcao do fantasma: 0=parado, 1=cima, 2=baixo, 3=esq, 4=dir
+   field int direction;   // direcao do fantasma: 0=parado, 1=cima, 2=baixo, 3=esq, 4=dir
    field Random random;
-   field Ghost ghost;   // jogador 1
-   field Person person; // jogador 2
+   field Ghost ghost;     // jogador 1 (recriado a cada rodada)
+   field Person person;   // jogador 2 (recriado a cada rodada)
    field GameMap map;
 
-   /** Cria o mapa, o fantasma e a pessoa. */
+   // ---- Configuracao de tempo (ajuste aqui para melhorar a jogabilidade) ----
+   field int prepSeconds;       // segundos de vantagem da pessoa (fantasma parado)
+   field int gameSeconds;       // segundos que o fantasma tem para pegar a pessoa
+   field int framesPerSecond;   // quantos frames do loop equivalem a 1 segundo
+   field int frameDelay;        // espera por frame em ms (menor = jogo mais rapido)
+
+   // ---- Textos guardados uma vez so (evita vazar memoria a cada desenho) ----
+   field String txtPrep, txtTime, txtBlank, txtLose1, txtLose2, txtRestart;
+
+   /** Cria o mapa e prepara as configuracoes. Os personagens nascem em startRound(). */
    constructor GhostGame new() {
       let map = GameMap.new();
-      do Screen.clearScreen();
-      do map.draw();
-
-      let ghost = Ghost.new(32, 48);       // celula (2, 3)
-      let person = Person.new(448, 192);   // celula (28, 12), longe do fantasma
       let random = Random.new(19);
-      let direction = 0;                   // comeca parado
+
+      let prepSeconds = 3;
+      let gameSeconds = 15;
+      let framesPerSecond = 10;
+      let frameDelay = 80;
+
+      let txtPrep = "PREPARE-SE: ";
+      let txtTime = "TEMPO: ";
+      let txtBlank = "          ";
+      let txtLose1 = "Game Over - Jogador 1 perdeu";
+      let txtLose2 = "Game Over - Jogador 2 perdeu";
+      let txtRestart = "Reiniciando...";
       return this;
    }
 
    /** Libera a memoria do jogo. */
    method void dispose() {
       do map.dispose();
+      do random.dispose();
+      do txtPrep.dispose();
+      do txtTime.dispose();
+      do txtBlank.dispose();
+      do txtLose1.dispose();
+      do txtLose2.dispose();
+      do txtRestart.dispose();
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Desenha o mapa e cria fantasma e pessoa nas posicoes iniciais. */
+   method void startRound() {
+      do Screen.clearScreen();
+      do map.draw();
+      let ghost = Ghost.new(32, 48);       // celula (2, 3)
+      let person = Person.new(448, 192);   // celula (28, 12), longe do fantasma
+      let direction = 0;
+      return;
+   }
+
+   /** Libera os personagens da rodada que acabou. */
+   method void endRound() {
       do ghost.dispose();
       do person.dispose();
-      do Memory.deAlloc(this);
       return;
    }
 
@@ -72,16 +113,18 @@ class GhostGame {
       return;
    }
 
-   /** Le a tecla pressionada e atualiza a direcao do jogador correspondente. */
-   method void handleKey(char key) {
-      // ---- Jogador 1 (fantasma) ----
+   /** Teclas do jogador 1 (fantasma). So e chamado depois da fase de preparacao. */
+   method void handleGhostKey(char key) {
       if (key = 131) { let direction = 1; }   // seta cima
       if (key = 133) { let direction = 2; }   // seta baixo
       if (key = 130) { let direction = 3; }   // seta esquerda
       if (key = 132) { let direction = 4; }   // seta direita
       if ((key = 46) | (key = 59)) { let direction = 0; }   // '.' ou ';' = parar
+      return;
+   }
 
-      // ---- Jogador 2 (pessoa): aceita maiuscula e minuscula ----
+   /** Teclas do jogador 2 (pessoa). Aceita maiuscula e minuscula. */
+   method void handlePersonKey(char key) {
       if ((key = 119) | (key = 87)) { do person.setDirection(1); }   // w
       if ((key = 115) | (key = 83)) { do person.setDirection(2); }   // s
       if ((key = 97)  | (key = 65)) { do person.setDirection(3); }   // a
@@ -90,22 +133,144 @@ class GhostGame {
       return;
    }
 
-   /** Loop principal: a cada "frame" le o teclado e move os dois jogadores. */
-   method void run() {
+   /** Verdadeiro se fantasma e pessoa estao na mesma celula. */
+   method boolean caught() {
+      return (ghost.getX() = person.getX()) & (ghost.getY() = person.getY());
+   }
+
+   /** Escreve o relogio no canto superior esquerdo (linha 0 de texto, area livre do mapa). */
+   method void drawClock(boolean prep, int seconds) {
+      do Output.moveCursor(0, 0);
+      if (prep) {
+         do Output.printString(txtPrep);
+      } else {
+         do Output.printString(txtTime);
+      }
+      do Output.printInt(seconds);
+      do Output.printString(txtBlank);   // apaga sobras de textos/numeros maiores
+      return;
+   }
+
+   /**
+    * Executa uma rodada ate ela terminar. Retorna:
+    *   1 = fantasma pegou a pessoa (Jogador 2 perdeu)
+    *   2 = tempo acabou           (Jogador 1 perdeu)
+    *   3 = jogador apertou ESC/Q  (sair do jogo)
+    */
+   method int playRound() {
       var char key;
+      var int result, frames, secondsLeft;
+      var boolean prep;
+
+      let result = 0;
+      let prep = true;               // comeca na fase de preparacao
+      let secondsLeft = prepSeconds;
+      let frames = 0;
+      do drawClock(prep, secondsLeft);
+
+      while (result = 0) {
+         let key = Keyboard.keyPressed();
+
+         if ((key = 140) | (key = 81) | (key = 113)) {   // ESC ou Q
+            let result = 3;
+         }
+
+         if (result = 0) {
+            do handlePersonKey(key);
+
+            // Fantasma so se move depois da fase de preparacao
+            if (~prep) {
+               do handleGhostKey(key);
+               do moveGhost();
+               if (caught()) { let result = 1; }   // fantasma andou ate a pessoa
+            }
+         }
+
+         if (result = 0) {
+            do person.update(map);
+            if (caught()) { let result = 1; }      // pessoa andou ate o fantasma
+         }
+
+         if (result = 0) {
+            // Contagem do tempo: framesPerSecond frames = 1 segundo
+            let frames = frames + 1;
+            if (frames = framesPerSecond) {
+               let frames = 0;
+               let secondsLeft = secondsLeft - 1;
+
+               if (secondsLeft = 0) {
+                  if (prep) {
+                     // Acabou a vantagem da pessoa: comeca o relogio principal
+                     let prep = false;
+                     let secondsLeft = gameSeconds;
+                  } else {
+                     let result = 2;   // tempo acabou: pessoa vence
+                  }
+               }
+
+               if (result = 0) {
+                  do drawClock(prep, secondsLeft);
+               }
+            }
+            do Sys.wait(frameDelay);
+         }
+      }
+      return result;
+   }
+
+   /**
+    * Mostra a mensagem de Game Over no centro da tela por ~3 segundos
+    * (depois o jogo reinicia sozinho). Retorna true se ESC/Q foi apertado.
+    */
+   method boolean showGameOver(int result) {
+      var int i;
+      var char key;
+      var boolean quit;
+
+      // Caixa branca com borda preta para a mensagem ficar legivel sobre o mapa
+      do Screen.setColor(true);
+      do Screen.drawRectangle(124, 98, 388, 154);
+      do Screen.setColor(false);
+      do Screen.drawRectangle(128, 102, 384, 150);
+
+      // Tela tem 23 linhas x 64 colunas de texto: a mensagem (28 letras) fica em (10, 18)
+      do Output.moveCursor(10, 18);
+      if (result = 1) {
+         do Output.printString(txtLose2);   // fantasma pegou: Jogador 2 perdeu
+      } else {
+         do Output.printString(txtLose1);   // tempo acabou: Jogador 1 perdeu
+      }
+      do Output.moveCursor(12, 25);
+      do Output.printString(txtRestart);
+
+      let quit = false;
+      let i = 0;
+      while ((i < 30) & (~quit)) {
+         do Sys.wait(100);
+         let key = Keyboard.keyPressed();
+         if ((key = 140) | (key = 81) | (key = 113)) { let quit = true; }
+         let i = i + 1;
+      }
+      return quit;
+   }
+
+   /** Loop principal: roda rodadas em sequencia (reinicio automatico) ate ESC. */
+   method void run() {
+      var int result;
       var boolean exit;
       let exit = false;
 
       while (~exit) {
-         let key = Keyboard.keyPressed();
+         do startRound();
+         let result = playRound();
 
-         if ((key = 140) | (key = 81) | (key = 113)) { let exit = true; }  // ESC ou Q
+         if (result = 3) {
+            let exit = true;
+         } else {
+            let exit = showGameOver(result);
+         }
 
-         do handleKey(key);   // atualiza as direcoes
-         do moveGhost();      // jogador 1 anda 1 celula (se puder)
-         do person.update(map);   // jogador 2 anda 1 celula (se puder)
-
-         do Sys.wait(80);     // controla a velocidade (menor = mais rapido)
+         do endRound();
       }
       return;
    }
