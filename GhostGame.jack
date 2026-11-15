@@ -49,8 +49,8 @@ class GhostGame {
          return;
       }
 
-      let col = ghost.getX()
-      let row = ghost.getY()
+      let col = ghost.getX();
+      let row = ghost.getY();
       let nextCol = col;
       let nextRow = row;
 
