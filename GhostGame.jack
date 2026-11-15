@@ -1,137 +1,112 @@
-// This file is part of www.nand2tetris.org
-// and the book "The Elements of Computing Systems"
-// by Nisan and Schocken, MIT Press.
-// File name: projects/09/Square/SquareGame.jack
+// Baseado em projects/09/Square/SquareGame.jack (www.nand2tetris.org)
+// Adaptado para o Projeto 6 - Ghost Multiplayer.
 
 /**
- * Implements the Square Dance game.
- * This simple game allows the user to move a black square around
- * the screen, and change the square's size during the movement.
- * When the game starts, a square of 30 by 30 pixels is shown at the
- * top-left corner of the screen. The user controls the square as follows.
- * The 4 arrow keys are used to move the square up, down, left, and right.
- * The 'z' and 'x' keys are used, respectively, to decrement and increment
- * the square's size. The 'q' key is used to quit the game.
+ * Jogo Ghost com dois jogadores.
+ *
+ * Jogador 1 (fantasma):  setas = direcao   |  '.' ou ';' = parar
+ * Jogador 2 (pessoa):    w a s d = direcao |  'e' = parar
+ * ESC (ou Q) encerra o jogo.
+ *
+ * Os dois personagens andam sozinhos ate encontrar uma parede, entao
+ * cada jogador so precisa "tocar" na tecla de direcao.
  */
-
 class GhostGame {
-   field int direction; // the square's current direction: 
-                        // 0=none, 1=up, 2=down, 3=left, 4=right
+   field int direction; // direcao do fantasma: 0=parado, 1=cima, 2=baixo, 3=esq, 4=dir
    field Random random;
-   field Ghost ghost;
+   field Ghost ghost;   // jogador 1
+   field Person person; // jogador 2
    field GameMap map;
 
-   /** Constructs a new Square Game. */
+   /** Cria o mapa, o fantasma e a pessoa. */
    constructor GhostGame new() {
-      // Creates a 30 by 30 pixels square and positions it at the top-left
-      // of the screen.
       let map = GameMap.new();
       do Screen.clearScreen();
       do map.draw();
 
-      let ghost = Ghost.new(32, 48);
+      let ghost = Ghost.new(32, 48);       // celula (2, 3)
+      let person = Person.new(448, 192);   // celula (28, 12), longe do fantasma
       let random = Random.new(19);
-      let direction = 0;  // initial state is no movement
+      let direction = 0;                   // comeca parado
       return this;
    }
 
-   /** Disposes this game. */
+   /** Libera a memoria do jogo. */
    method void dispose() {
       do map.dispose();
       do ghost.dispose();
+      do person.dispose();
       do Memory.deAlloc(this);
       return;
    }
 
-   /** Moves the square in the current direction. */
+   /** Move o fantasma uma celula na direcao atual; para se houver parede. */
    method void moveGhost() {
       var int col, row;
       var int nextCol, nextRow;
 
+      if (direction = 0) {   // parado: nada a fazer
+         return;
+      }
+
       let col = ghost.getX() / 16;
       let row = ghost.getY() / 16;
-
       let nextCol = col;
       let nextRow = row;
 
-      if (direction = 1) {
-         let nextRow = row - 1;
-      }
+      if (direction = 1) { let nextRow = row - 1; }
+      if (direction = 2) { let nextRow = row + 1; }
+      if (direction = 3) { let nextCol = col - 1; }
+      if (direction = 4) { let nextCol = col + 1; }
 
-      if (direction = 2) {
-         let nextRow = row + 1;
-      }
-
-      if (direction = 3) {
-         let nextCol = col - 1;
-      }
-
-      if (direction = 4) {
-         let nextCol = col + 1;
-      }
-
-      if (direction = 0) { // Nao ha movimento a executar
-         return;
-      }
+      // Colisao com parede: para o fantasma
       if (map.isWall(nextCol, nextRow)) {
          let direction = 0;
          return;
       }
 
-      if (direction = 1) {
-         do ghost.moveUp();
-      }
-
-      if (direction = 2) {
-         do ghost.moveDown();
-      }
-
-      if (direction = 3) {
-         do ghost.moveLeft();
-      }
-
-      if (direction = 4) {
-         do ghost.moveRight();
-      }
-
-      do Sys.wait(5);
+      if (direction = 1) { do ghost.moveUp(); }
+      if (direction = 2) { do ghost.moveDown(); }
+      if (direction = 3) { do ghost.moveLeft(); }
+      if (direction = 4) { do ghost.moveRight(); }
       return;
-
    }
 
-   /** Runs the game: handles the user's inputs and moves the square accordingly */
+   /** Le a tecla pressionada e atualiza a direcao do jogador correspondente. */
+   method void handleKey(char key) {
+      // ---- Jogador 1 (fantasma) ----
+      if (key = 131) { let direction = 1; }   // seta cima
+      if (key = 133) { let direction = 2; }   // seta baixo
+      if (key = 130) { let direction = 3; }   // seta esquerda
+      if (key = 132) { let direction = 4; }   // seta direita
+      if ((key = 46) | (key = 59)) { let direction = 0; }   // '.' ou ';' = parar
+
+      // ---- Jogador 2 (pessoa): aceita maiuscula e minuscula ----
+      if ((key = 119) | (key = 87)) { do person.setDirection(1); }   // w
+      if ((key = 115) | (key = 83)) { do person.setDirection(2); }   // s
+      if ((key = 97)  | (key = 65)) { do person.setDirection(3); }   // a
+      if ((key = 100) | (key = 68)) { do person.setDirection(4); }   // d
+      if ((key = 101) | (key = 69)) { do person.stop(); }            // e = parar
+      return;
+   }
+
+   /** Loop principal: a cada "frame" le o teclado e move os dois jogadores. */
    method void run() {
-      var char key;  // the key currently pressed by the user
+      var char key;
       var boolean exit;
       let exit = false;
-      
-      while (~exit) {
-         // waits for a key to be pressed
-         while (key = 0) {
-            let key = Keyboard.keyPressed();
-            do moveGhost();
-            do Sys.wait(50);
-            // let direction = random.randRange(4);
-         }
-         if (key = 81)  { let exit = true; }     // q key
-         // if (key = 90)  { do ghost.decSize(); } // z key
-         // if (key = 88)  { do ghost.incSize(); } // x key
-         if (key = 131) { let direction = 1; }   // up arrow
-         if (key = 133) { let direction = 2; }   // down arrow
-         if (key = 130) { let direction = 3; }   // left arrow
-         if (key = 132) { let direction = 4; }   // right arrow
 
-         // waits for the key to be released
-         while (~(key = 0)) {
-            let key = Keyboard.keyPressed();
-            do moveGhost();
-            do Sys.wait(50);
-         }
-         let direction = 0; 
-     } // while
-     return;
+      while (~exit) {
+         let key = Keyboard.keyPressed();
+
+         if ((key = 140) | (key = 81) | (key = 113)) { let exit = true; }  // ESC ou Q
+
+         do handleKey(key);   // atualiza as direcoes
+         do moveGhost();      // jogador 1 anda 1 celula (se puder)
+         do person.update(map);   // jogador 2 anda 1 celula (se puder)
+
+         do Sys.wait(80);     // controla a velocidade (menor = mais rapido)
+      }
+      return;
    }
 }
-
-
-
