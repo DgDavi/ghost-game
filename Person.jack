@@ -1,0 +1,131 @@
+/**
+ * Person: o jogador 2 (a pessoa que foge do fantasma).
+ *
+ * Funciona igual ao Ghost, mas com movimento automatico:
+ * o jogador so escolhe a DIRECAO (w/a/s/d) e a pessoa anda sozinha,
+ * uma celula (16 px) por "frame", ate bater numa parede ou ate o
+ * jogador apertar a tecla de parar ('e').
+ *
+ * Direcoes: 0 = parada, 1 = cima, 2 = baixo, 3 = esquerda, 4 = direita
+ */
+class Person {
+
+   field int x, y;        // posicao em pixels do canto superior esquerdo
+   field int size;        // tamanho do sprite (16 px)
+   field int memAddress;  // endereco da tela usado para desenhar o sprite
+   field int direction;   // direcao atual do movimento automatico
+
+   /** Cria a pessoa na posicao (Ax, Ay) em pixels. */
+   constructor Person new(int Ax, int Ay) {
+      let x = Ax;
+      let y = Ay;
+      let size = 16;
+      let memAddress = 0;
+      let direction = 0;
+      do draw();
+      return this;
+   }
+
+   /** Libera a memoria do objeto. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Desenha a pessoa na tela. */
+   method void draw() {
+      do drawSprite((y * 32) + (x / size));
+      return;
+   }
+
+   /** Apaga a pessoa da tela (pinta o quadrado 16x16 de branco). */
+   method void erase() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
+      return;
+   }
+
+   /** Sprite 16x16 da pessoa: um boneco de cabeca, bracos, tronco e pernas.
+       Cada poke escreve uma linha de 16 pixels (a linha da tela tem 32 palavras). */
+   method void drawSprite(int location) {
+      let memAddress = 16384 + location;
+      do Memory.poke(memAddress + 0, 0);
+      do Memory.poke(memAddress + 32, 2016);
+      do Memory.poke(memAddress + 64, 4080);
+      do Memory.poke(memAddress + 96, 4080);
+      do Memory.poke(memAddress + 128, 2016);
+      do Memory.poke(memAddress + 160, 960);
+      do Memory.poke(memAddress + 192, 16380);
+      do Memory.poke(memAddress + 224, 14316);
+      do Memory.poke(memAddress + 256, 14316);
+      do Memory.poke(memAddress + 288, 14316);
+      do Memory.poke(memAddress + 320, 2016);
+      do Memory.poke(memAddress + 352, 2016);
+      do Memory.poke(memAddress + 384, 3696);
+      do Memory.poke(memAddress + 416, 3696);
+      do Memory.poke(memAddress + 448, 3696);
+      do Memory.poke(memAddress + 480, 7800);
+      return;
+   }
+
+   /** Define a direcao do movimento (1=cima, 2=baixo, 3=esq, 4=dir). */
+   method void setDirection(int d) {
+      let direction = d;
+      return;
+   }
+
+   /** Para a pessoa (tecla 'e'). */
+   method void stop() {
+      let direction = 0;
+      return;
+   }
+
+   method int getDirection() {
+      return direction;
+   }
+
+   /**
+    * Anda UMA celula na direcao atual, se o caminho estiver livre.
+    * Se a proxima celula for parede, a pessoa para (direction = 0).
+    * Deve ser chamado uma vez por "frame" do jogo.
+    */
+   method void update(GameMap map) {
+      var int col, row;          // celula atual
+      var int nextCol, nextRow;  // celula para onde quer ir
+
+      if (direction = 0) {       // parada: nada a fazer
+         return;
+      }
+
+      let col = x / size;
+      let row = y / size;
+      let nextCol = col;
+      let nextRow = row;
+
+      if (direction = 1) { let nextRow = row - 1; }   // cima
+      if (direction = 2) { let nextRow = row + 1; }   // baixo
+      if (direction = 3) { let nextCol = col - 1; }   // esquerda
+      if (direction = 4) { let nextCol = col + 1; }   // direita
+
+      // Colisao com parede: para e nao se move
+      if (map.isWall(nextCol, nextRow)) {
+         let direction = 0;
+         return;
+      }
+
+      // Caminho livre: apaga, atualiza posicao e redesenha
+      do erase();
+      let x = nextCol * size;
+      let y = nextRow * size;
+      do draw();
+      return;
+   }
+
+   method int getX() {
+      return x;
+   }
+
+   method int getY() {
+      return y;
+   }
+}
