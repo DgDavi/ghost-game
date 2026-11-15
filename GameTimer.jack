@@ -1,0 +1,55 @@
+class GameTimer {
+    field int remaining;
+    field int ticks;
+    field int ticksPerSecond;
+
+
+    constructor GameTimer new(int duration) {
+        let remaining = duration;
+        let ticks = 0;
+        let ticksPerSecond = 12;
+
+        return this;
+    }
+
+
+    method void update() { // 1 segundo = 12 ticks
+        if (remaining > 0) {
+            let ticks = ticks + 1;
+
+            if (ticks = ticksPerSecond) {
+                let remaining = remaining - 1;
+                let ticks = 0;
+            }
+        }
+
+        return;
+    }
+
+
+    method int getRemaining() {
+        return remaining;
+    }
+
+
+    method boolean isFinished() {
+        if (getRemaining() = 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    method void reset(int duration) {
+        let remaining = duration;
+        let ticks = 0;
+
+        return;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+}
+}

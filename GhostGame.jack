@@ -17,6 +17,11 @@ class GhostGame {
    field Ghost ghost;   // jogador 1
    field Person person; // jogador 2
    field GameMap map;
+   field GameTimer timer;
+   field int gameState;
+   field int lastDisplayedTime;
+   field int lastDisplayedState;
+
 
    /** Cria o mapa, o fantasma e a pessoa. */
    constructor GhostGame new() {
@@ -24,10 +29,16 @@ class GhostGame {
       do Screen.clearScreen();
       do map.draw();
 
-      let ghost = Ghost.new(32, 48);       // celula (2, 3)
-      let person = Person.new(448, 192);   // celula (28, 12), longe do fantasma
+      let ghost = Ghost.new(32, 48);
+      let person = Person.new(448, 192);
       let random = Random.new(19);
-      let direction = 0;                   // comeca parado
+      let direction = 0;
+
+      let timer = GameTimer.new(3);
+      let gameState = 0;
+      let lastDisplayedTime = -1;
+      let lastDisplayedState = -1;
+
       return this;
    }
 
@@ -45,7 +56,7 @@ class GhostGame {
       var int col, row;
       var int nextCol, nextRow;
 
-      if (direction = 0) {   // parado: nada a fazer
+      if (direction = 0) {
          return;
       }
 
@@ -89,6 +100,39 @@ class GhostGame {
       if ((key = 101) | (key = 69)) { do person.stop(); }            // e = parar
       return;
    }
+   
+
+
+   method void drawTimer() {
+      var int currentTime;
+
+      let currentTime = timer.getRemaining();
+
+      if ((currentTime = lastDisplayedTime) &
+         (gameState = lastDisplayedState)) {
+         return;
+      }
+
+      do Output.moveCursor(0, 0);
+      do Output.printString("                         ");
+
+      do Output.moveCursor(0, 0);
+
+      if (gameState = 0) {
+         do Output.printString("PREPARACAO: ");
+      } else {
+         do Output.printString("PERSEGUICAO: ");
+      }
+
+      do Output.printInt(currentTime);
+
+      let lastDisplayedTime = currentTime;
+      let lastDisplayedState = gameState;
+
+      return;
+   }
+
+
 
    /** Loop principal: a cada "frame" le o teclado e move os dois jogadores. */
    method void run() {
@@ -101,12 +145,33 @@ class GhostGame {
 
          if ((key = 140) | (key = 81) | (key = 113)) { let exit = true; }  // ESC ou Q
 
-         do handleKey(key);   // atualiza as direcoes
-         do moveGhost();      // jogador 1 anda 1 celula (se puder)
-         do person.update(map);   // jogador 2 anda 1 celula (se puder)
+         if (~exit) {
+            do handleKey(key);
+         }
 
-         do Sys.wait(80);     // controla a velocidade (menor = mais rapido)
+         if (gameState = 0) {
+            do person.update(map);
+            do timer.update();
+
+            if (timer.isFinished()) {
+               let gameState = 1;
+               do timer.reset(20);
+            }
+         }
+
+         else {
+            if (gameState = 1) {
+               do moveGhost();
+               do person.update(map);
+               do timer.update();
+            }
+         }
+
+         do drawTimer();
+
+         do Sys.wait(80);
       }
       return;
    }
+
 }
