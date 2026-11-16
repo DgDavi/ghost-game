@@ -1,89 +1,46 @@
-// https://github.com/xctom/Nand2Tetris/blob/master/projects/09/PigDice/Random.jack
+// Baseado em projects/09/PigDice/Random.jack (xctom/Nand2Tetris).
+// Adaptado: o gerador original somava uma constante e usava so os bits mais
+// baixos, o que gerava posicoes muito repetitivas. Agora usa um gerador
+// congruencial linear de 16 bits.
 
 /**
-Reference: http://nand2tetris-questions-and-answers-forum.32033.n3.nabble.com/Random-number-generator-for-hack-cpu-td4025503.html#a4025511
-
-There is no random generator in Jack
-So we need to generate pseudo random number by ourself
-This class is quite simple random number generator
-
-Improvement: let the number be more random by adding shift number
-**/
-
+ * Random: gerador de numeros pseudo-aleatorios (o Jack nao tem um nativo).
+ *
+ * Formula: x = (25173 * x + 13849) mod 65536
+ * (periodo completo: passa por todos os 65536 valores antes de repetir).
+ * A semente vem do tempo que o jogador demora para apertar uma tecla na
+ * tela inicial, entao cada partida comeca diferente.
+ */
 class Random {
-    field int seed; //random seed
-    field int calledTime;
+   field int seed;        // estado atual do gerador
+   field int calledTime;  // quantas vezes randRange foi chamado (depuracao)
 
-    constructor Random new(int seedIn) {
+   /** Cria o gerador com uma semente inicial. */
+   constructor Random new(int seedIn) {
+      let seed = seedIn;
+      let calledTime = 0;
+      let seed = rand();   // embaralha a semente inicial
+      return this;
+   }
 
-        let seed = seedIn;
-        let seed = rand();
-        let calledTime = 0;
+   /** Proximo numero pseudo-aleatorio no intervalo 0..32767. */
+   method int rand() {
+      let seed = (seed * 25173) + 13849;   // estouro de 16 bits faz o "mod 65536"
+      return seed & 32767;                 // zera o bit de sinal
+   }
 
-        return this;
-    }
+   /** Numero pseudo-aleatorio no intervalo 0..range (inclusive). */
+   method int randRange(int range) {
+      var int r;
 
-    method int rand() {
-        /** return a random number in the range 0..32767 */
+      let calledTime = calledTime + 1;
+      let r = rand() / 8;   // descarta os 3 bits menos aleatorios
+      return r - ((r / (range + 1)) * (range + 1));   // r mod (range + 1)
+   }
 
-        let seed = seed + 20251;
-
-        if (seed < 0) {
-            let seed = seed - 32767 - 1;
-        }
-
-        return seed;
-    }
-
-    method int randRange(int range) {
-        /** return a random number in the range 0..range */
-        var int mask;
-        var int ret;
-
-        let mask = 1;
-        while (mask < range) {
-            let mask = mask * 2 + 1;
-        }
-
-        let ret = rand() & mask;
-        let calledTime = calledTime + 1;
-
-        while (ret > range) {
-            let ret = rand() & mask;
-            let calledTime = calledTime + 1;
-            let ret = ret & getShift();
-        }
-
-        return ret;
-    }
-
-    //get new shift number according to called times
-    method int getShift() {
-        var int temp;
-
-        let calledTime = calledTime + 1;
-        let temp = calledTime;
-        
-        while(temp > 9){
-
-            let temp = temp - 9;
-
-        }
-
-        return temp;
-    }
-
-    //dispose the Oject
-    method void dispose(){
-        do Memory.deAlloc(this);
-        return;
-    }
-
-    method void addCallTime(int times){
-
-        let calledTime = calledTime + times;
-        return;
-
-    }
-
+   /** Libera a memoria do objeto. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
 }

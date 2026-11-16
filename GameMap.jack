@@ -1,126 +1,151 @@
+/**
+ * GameMap: o mapa fixo do jogo (paredes, corredores e labirinto).
+ *
+ * A tela de 512x256 px e dividida em uma grade de 32 colunas x 16 linhas,
+ * com celulas de 16x16 px. 'cells' guarda 1 para parede e 0 para chao,
+ * indexado por (linha * 32 + coluna).
+ *
+ * A linha 0 fica livre para o relogio. Layout (# = parede):
+ *
+ *  1 ################################
+ *  2 #...#...........#.........#....#
+ *  3 #...#.....####..#####.....#....#
+ *  4 #...#.....#.........#.....#....#
+ *  5 #...#####.#....#....#.#####....#
+ *  6 #.........#....#....#..........#
+ *  7 #.........#....#....#..........#
+ *  8 #..............#...............#
+ *  9 #.######.......#........######.#
+ * 10 #......#................#......#
+ * 11 #......#..####....####..#......#
+ * 12 #......#................#......#
+ * 13 #..####......#....#......####..#
+ * 14 #............#....#............#
+ * 15 ################################
+ *
+ * Todas as celulas livres sao alcancaveis entre si (nao existe area fechada).
+ */
 class GameMap {
-    field Array cells;
+   field Array cells;   // 32 x 16 celulas: 1 = parede, 0 = livre
 
+   /** Cria o mapa e monta as paredes. */
+   constructor GameMap new() {
+      var int i;
 
-    constructor GameMap new() {
-        var int i;
+      let cells = Array.new(512);
+      let i = 0;
 
-        let cells = Array.new(512);
-        let i =  0;
+      while (i < 512) {
+         let cells[i] = 0;
+         let i = i + 1;
+      }
 
-        while (i < 512) {
-            let cells[i] = 0;
-            let i = i + 1;
-        }
+      do horizontalWall(0, 0, 31);   // linha 0 (relogio): ninguem entra
 
-        do horizontalWall(0, 0, 31); // Deixa a linha superior vazia
+      // Moldura externa
+      do horizontalWall(1, 0, 31);
+      do horizontalWall(15, 0, 31);
+      do verticalWall(0, 1, 15);
+      do verticalWall(31, 1, 15);
 
-        do horizontalWall(1, 0, 31);
-        do horizontalWall(15, 0, 31);
-        do verticalWall(0, 1, 15);
-        do verticalWall(31, 1, 15);
+      // Parte de cima
+      do verticalWall(4, 2, 5);
+      do horizontalWall(5, 4, 8);
+      do verticalWall(10, 3, 7);
+      do horizontalWall(3, 10, 13);
+      do verticalWall(15, 5, 9);
+      do verticalWall(16, 2, 3);
+      do verticalWall(20, 3, 7);
+      do horizontalWall(3, 17, 20);
+      do verticalWall(26, 2, 5);
+      do horizontalWall(5, 22, 26);
 
-        do verticalWall(7, 3, 6);
-        do verticalWall(15, 2, 5);
-        do verticalWall(23, 3, 6);
+      // Meio
+      do horizontalWall(9, 2, 7);
+      do verticalWall(7, 9, 12);
+      do horizontalWall(9, 24, 29);
+      do verticalWall(24, 9, 12);
 
-        do horizontalWall(9, 3, 9);
-        do horizontalWall(9, 13, 19);
-        do horizontalWall(9, 23, 28);
+      // Parte de baixo
+      do horizontalWall(11, 10, 13);
+      do horizontalWall(11, 18, 21);
+      do horizontalWall(13, 3, 6);
+      do horizontalWall(13, 25, 28);
+      do verticalWall(13, 13, 14);
+      do verticalWall(18, 13, 14);
 
-        do verticalWall(11, 11, 13);
-        do verticalWall(20, 11, 13);
+      return this;
+   }
 
-        return this;
-    }
+   /** Marca a celula (col, row) como parede. */
+   method void setWall(int col, int row) {
+      let cells[(row * 32) + col] = 1;
+      return;
+   }
 
+   /** Parede horizontal na linha 'row', da coluna 'start' ate 'end'. */
+   method void horizontalWall(int row, int start, int end) {
+      var int col;
 
-    method void setWall(int col, int row) {
-        let cells[(row * 32) + col] = 1;
-        return;
-    }
+      let col = start;
+      while (col < (end + 1)) {
+         do setWall(col, row);
+         let col = col + 1;
+      }
+      return;
+   }
 
+   /** Parede vertical na coluna 'col', da linha 'start' ate 'end'. */
+   method void verticalWall(int col, int start, int end) {
+      var int row;
 
-    method void horizontalWall(int row, int start, int end) {
-        var int col;
+      let row = start;
+      while (row < (end + 1)) {
+         do setWall(col, row);
+         let row = row + 1;
+      }
+      return;
+   }
 
-        let col = start;
+   /** Verdadeiro se (col, row) e parede. Fora da grade conta como parede,
+       entao nenhum personagem consegue sair da tela. */
+   method boolean isWall(int col, int row) {
+      if ((col < 0) | (col > 31)) {
+         return true;
+      }
 
-        while (col < (end + 1)) {
-            do setWall(col, row);
-            let col = col + 1;
-        }
+      if ((row < 0) | (row > 15)) {
+         return true;
+      }
 
-        return;
-    }
+      return (cells[(row * 32) + col] = 1);
+   }
 
+   /** Desenha as paredes na tela (a linha 0 nao e desenhada). */
+   method void draw() {
+      var int row, col;
 
-    method void verticalWall(int col, int start, int end) {
-        var int row;
+      do Screen.setColor(true);
 
-        let row = start;
+      let row = 1;
+      while (row < 16) {
+         let col = 0;
 
-        while (row < (end + 1)) {
-            do setWall(col, row);
-            let row = row + 1;
-        }
-
-        return;
-    }
-
-
-    method boolean isWall(int col, int row) {
-        if ((col < 0) | (col > 31)) {
-            return true;
-        }
-
-        if ((row < 0) | (row > 15)) {
-            return true;
-        }
-
-        if (cells[(row * 32) + col] = 1) {
-            return true;
-        }
-
-        return false;
-    }
-
-
-    method void draw() {
-        var int row, col;
-
-        do Screen.setColor(true);
-
-        let row = 1;
-
-        while (row < 16) {
-            let col = 0;
-
-            while (col < 32) {
-                if (isWall(col, row)) {
-                    do Screen.drawRectangle(
-                        col * 16,
-                        row * 16,
-                        (col * 16) + 15,
-                        (row * 16) + 15
-                    );
-                }
-
-                let col = col + 1;
+         while (col < 32) {
+            if (isWall(col, row)) {
+               do Screen.drawRectangle(col * 16, row * 16, (col * 16) + 15, (row * 16) + 15);
             }
+            let col = col + 1;
+         }
+         let row = row + 1;
+      }
+      return;
+   }
 
-            let row = row + 1;
-        }
-
-        return;
-    }
-
-
-    method void dispose() {
-        do cells.dispose();
-        do Memory.deAlloc(this);
-        return;
-    }
-
-
+   /** Libera a memoria do mapa. */
+   method void dispose() {
+      do cells.dispose();
+      do Memory.deAlloc(this);
+      return;
+   }
 }
