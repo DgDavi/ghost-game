@@ -10,10 +10,10 @@
  */
 class Person {
 
-   field int x, y;
-   field int size;
-   field int memAddress;
-   field int direction;
+   field int x, y;        // posicao em pixels do canto superior esquerdo
+   field int size;        // tamanho do sprite (16 px)
+   field int memAddress;  // endereco da tela usado para desenhar o sprite
+   field int direction;   // direcao atual do movimento automatico
 
    /** Cria a pessoa na posicao (Ax, Ay) em pixels. */
    constructor Person new(int Ax, int Ay) {
@@ -80,9 +80,6 @@ class Person {
       return;
    }
 
-   method int getDirection() {
-      return direction;
-   }
 
    /**
     * Anda UMA celula na direcao atual, se o caminho estiver livre.
@@ -90,10 +87,10 @@ class Person {
     * Deve ser chamado uma vez por "frame" do jogo.
     */
    method void update(GameMap map) {
-      var int col, row;
-      var int nextCol, nextRow;
+      var int col, row;          // celula atual
+      var int nextCol, nextRow;  // celula para onde quer ir
 
-      if (direction = 0) {
+      if (direction = 0) {       // parada: nada a fazer
          return;
       }
 
@@ -102,10 +99,10 @@ class Person {
       let nextCol = col;
       let nextRow = row;
 
-      if (direction = 1) { let nextRow = row - 1; }
-      if (direction = 2) { let nextRow = row + 1; }
-      if (direction = 3) { let nextCol = col - 1; }
-      if (direction = 4) { let nextCol = col + 1; }
+      if (direction = 1) { let nextRow = row - 1; }   // cima
+      if (direction = 2) { let nextRow = row + 1; }   // baixo
+      if (direction = 3) { let nextCol = col - 1; }   // esquerda
+      if (direction = 4) { let nextCol = col + 1; }   // direita
 
       // Colisao com parede: para e nao se move
       if (map.isWall(nextCol, nextRow)) {

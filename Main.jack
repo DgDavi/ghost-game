@@ -1,23 +1,14 @@
-// This file is part of www.nand2tetris.org
-// and the book "The Elements of Computing Systems"
-// by Nisan and Schocken, MIT Press.
-// File name: projects/09/Square/Main.jack
+// Baseado em projects/09/Square/Main.jack (www.nand2tetris.org)
 
-/** Initializes a new Square Dance game and starts running it. */
-
-
+/** Ponto de entrada: cria o jogo Ghost Multiplayer, executa e libera a memoria. */
 class Main {
-    function void main() {
-        var GhostGame game;
+   function void main() {
+      var GhostGame game;
 
-        let game = GhostGame.new();
+      let game = GhostGame.new();
+      do game.run();
+      do game.dispose();
 
-        do game.run();
-
-        do game.dispose();
-
-        return;
-    }
+      return;
+   }
 }
-
-

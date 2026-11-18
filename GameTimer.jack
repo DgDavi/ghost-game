@@ -1,55 +1,57 @@
+/**
+ * GameTimer: relogio regressivo do jogo.
+ *
+ * O Jack nao tem relogio de tempo real, entao o tempo e contado em "ticks":
+ * cada chamada de update() e um tick (um frame do jogo) e
+ * ticksPerSecond ticks equivalem a 1 segundo.
+ * Usado para os dois relogios: preparacao (3 s) e perseguicao.
+ */
 class GameTimer {
-    field int remaining;
-    field int ticks;
-    field int ticksPerSecond;
+   field int remaining;       // segundos restantes
+   field int ticks;           // ticks acumulados no segundo atual
+   field int ticksPerSecond;  // quantos ticks formam 1 segundo
 
+   /** Cria um relogio com 'duration' segundos. */
+   constructor GameTimer new(int duration) {
+      let remaining = duration;
+      let ticks = 0;
+      let ticksPerSecond = 12;   // 12 frames de ~80 ms = ~1 segundo
+      return this;
+   }
 
-    constructor GameTimer new(int duration) {
-        let remaining = duration;
-        let ticks = 0;
-        let ticksPerSecond = 12;
+   /** Deve ser chamado uma vez por frame; a cada 12 ticks tira 1 segundo. */
+   method void update() {
+      if (remaining > 0) {
+         let ticks = ticks + 1;
 
-        return this;
-    }
+         if (ticks = ticksPerSecond) {
+            let remaining = remaining - 1;
+            let ticks = 0;
+         }
+      }
+      return;
+   }
 
+   /** Segundos que ainda faltam. */
+   method int getRemaining() {
+      return remaining;
+   }
 
-    method void update() { // 1 segundo = 12 ticks
-        if (remaining > 0) {
-            let ticks = ticks + 1;
+   /** Verdadeiro quando o relogio chegou a zero. */
+   method boolean isFinished() {
+      return (remaining = 0);
+   }
 
-            if (ticks = ticksPerSecond) {
-                let remaining = remaining - 1;
-                let ticks = 0;
-            }
-        }
+   /** Reinicia o relogio com uma nova duracao em segundos. */
+   method void reset(int duration) {
+      let remaining = duration;
+      let ticks = 0;
+      return;
+   }
 
-        return;
-    }
-
-
-    method int getRemaining() {
-        return remaining;
-    }
-
-
-    method boolean isFinished() {
-        if (getRemaining() = 0) {
-            return true;
-        }
-
-        return false;
-    }
-
-
-    method void reset(int duration) {
-        let remaining = duration;
-        let ticks = 0;
-
-        return;
-    }
-
-    method void dispose() {
-        do Memory.deAlloc(this);
-        return;
-}
+   /** Libera a memoria do objeto. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
 }
