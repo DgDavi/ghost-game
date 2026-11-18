@@ -18,7 +18,6 @@ class Random {
    /** Cria o gerador com uma semente inicial. */
    constructor Random new(int seedIn) {
       let seed = seedIn;
-      let calledTime = 0;
       let seed = rand();   // embaralha a semente inicial
       return this;
    }
@@ -33,7 +32,6 @@ class Random {
    method int randRange(int range) {
       var int r;
 
-      let calledTime = calledTime + 1;
       let r = rand() / 8;   // descarta os 3 bits menos aleatorios
       return r - ((r / (range + 1)) * (range + 1));   // r mod (range + 1)
    }

@@ -80,9 +80,6 @@ class Person {
       return;
    }
 
-   method int getDirection() {
-      return direction;
-   }
 
    /**
     * Anda UMA celula na direcao atual, se o caminho estiver livre.
