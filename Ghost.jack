@@ -1,16 +1,20 @@
-// This file is part of www.nand2tetris.org
-// and the book "The Elements of Computing Systems"
-// by Nisan and Schocken, MIT Press.
-// File name: projects/09/Square/Square.jack
+// Baseado em projects/09/Square/Square.jack (www.nand2tetris.org)
+// Adaptado para o Projeto 6: o quadrado virou o fantasma (jogador 1).
 
-/** Implements a graphical square. */
+/**
+ * Ghost: o fantasma, controlado pelo jogador 1.
+ *
+ * A posicao (x, y) e em pixels e sempre multipla de 16, ou seja, o fantasma
+ * anda de celula em celula do mapa (cada celula tem 16x16 pixels).
+ * Quem decide SE pode andar (parede) e o GhostGame; o Ghost so se desenha.
+ */
 class Ghost {
 
-   field int x, y; // screen location of the square's top-left corner
-   field int size; // length of this square, in pixels
-   field int memAddress;
+   field int x, y;        // posicao em pixels do canto superior esquerdo
+   field int size;        // tamanho do sprite (16 px)
+   field int memAddress;  // endereco da tela usado para desenhar o sprite
 
-   /** Constructs a new square with a given location and size. */
+   /** Cria o fantasma na posicao (Ax, Ay) em pixels e ja o desenha. */
    constructor Ghost new(int Ax, int Ay) {
       let x = Ax;
       let y = Ay;
@@ -20,69 +24,49 @@ class Ghost {
       return this;
    }
 
-   /** Disposes this square. */
+   /** Libera a memoria do objeto. */
    method void dispose() {
       do Memory.deAlloc(this);
       return;
    }
 
-   /** Draws the square on the screen. */
+   /** Desenha o fantasma na tela. */
    method void draw() {
-      do drawHappyGhost(y*32+(x/size));
+      do drawHappyGhost((y * 32) + (x / size));
       return;
    }
 
-   /** Erases the square from the screen. */
+   /** Apaga o fantasma (pinta o quadrado 16x16 de branco). */
    method void erase() {
       do Screen.setColor(false);
-      do Screen.drawRectangle(x, y, x + size, y + size);
+      do Screen.drawRectangle(x, y, x + size - 1, y + size - 1);
       return;
    }
 
+   /** Sprite 16x16 do fantasma. Cada poke escreve uma linha de 16 pixels
+       (a linha da tela tem 32 palavras, por isso o passo de 32). */
    method void drawHappyGhost(int location) {
-      let memAddress = 16384+location;
-      do Memory.poke(memAddress+0, 8184);
-      do Memory.poke(memAddress+32, 16380);
-      do Memory.poke(memAddress+64, 25542);
-      do Memory.poke(memAddress+96, -1);
-      do Memory.poke(memAddress+128, -2065);
-      do Memory.poke(memAddress+160, -7225);
-      do Memory.poke(memAddress+192, -7225);
-      do Memory.poke(memAddress+224, -2065);
-      do Memory.poke(memAddress+256, -1);
-      do Memory.poke(memAddress+288, -1);
-      do Memory.poke(memAddress+320, -1);
-      do Memory.poke(memAddress+352, -4081);
-      do Memory.poke(memAddress+384, -2017);
-      do Memory.poke(memAddress+416, -961);
-      do Memory.poke(memAddress+448, -1);
-      do Memory.poke(memAddress+480, -1);
+      let memAddress = 16384 + location;
+      do Memory.poke(memAddress + 0, 8184);
+      do Memory.poke(memAddress + 32, 16380);
+      do Memory.poke(memAddress + 64, 25542);
+      do Memory.poke(memAddress + 96, -1);
+      do Memory.poke(memAddress + 128, -2065);
+      do Memory.poke(memAddress + 160, -7225);
+      do Memory.poke(memAddress + 192, -7225);
+      do Memory.poke(memAddress + 224, -2065);
+      do Memory.poke(memAddress + 256, -1);
+      do Memory.poke(memAddress + 288, -1);
+      do Memory.poke(memAddress + 320, -1);
+      do Memory.poke(memAddress + 352, -4081);
+      do Memory.poke(memAddress + 384, -2017);
+      do Memory.poke(memAddress + 416, -961);
+      do Memory.poke(memAddress + 448, -1);
+      do Memory.poke(memAddress + 480, -1);
       return;
    }
 
-
-
-    /** Increments the square size by 2 pixels. */
-   method void incSize() {
-      if (((y + size) < 254) & ((x + size) < 510)) {
-         do erase();
-         let size = size + 2;
-         do draw();
-      }
-      return;
-   }
-
-   /** Decrements the square size by 2 pixels. */
-   method void decSize() {
-      if (size > 2) {
-         do erase();
-         let size = size - 2;
-         do draw();
-      }
-      return;
-   }
-
-   /** Moves the ghost up by 16 pixels. */
+   /** Move o fantasma 16 px para cima (uma celula). */
    method void moveUp() {
       if (y > 15) {
          do erase();
@@ -92,7 +76,7 @@ class Ghost {
       return;
    }
 
-   /** Moves the square down by 16 pixels. */
+   /** Move o fantasma 16 px para baixo (uma celula). */
    method void moveDown() {
       if ((y + size) < 239) {
          do erase();
@@ -102,7 +86,7 @@ class Ghost {
       return;
    }
 
-   /** Moves the ghost left by 16 pixels. */
+   /** Move o fantasma 16 px para a esquerda (uma celula). */
    method void moveLeft() {
       if (x > 15) {
          do erase();
@@ -112,7 +96,7 @@ class Ghost {
       return;
    }
 
-   /** Moves the square right by 16 pixels. */
+   /** Move o fantasma 16 px para a direita (uma celula). */
    method void moveRight() {
       if ((x + size) < 495) {
          do erase();
@@ -120,5 +104,13 @@ class Ghost {
          do draw();
       }
       return;
+   }
+
+   method int getX() {
+      return x;
+   }
+
+   method int getY() {
+      return y;
    }
 }
